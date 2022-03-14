@@ -2,10 +2,15 @@ package com.example.demo.dao;
 
 import com.example.demo.model.Plan;
 import com.example.demo.redis.RedisService;
+import com.example.demo.utils.JsonObjectProcess;
 import com.example.demo.utils.JsonUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Repository;
+
+import java.util.List;
+import java.util.Map;
 
 @Repository
 public class PlanRedisDao implements PlanDao {
@@ -36,5 +41,17 @@ public class PlanRedisDao implements PlanDao {
     @Override
     public String deletePlan(String id) {
         return redisService.deleteDataInRedis(id) == null? null: id;
+    }
+
+    @Override
+    public void addGraph(String jsonString) throws JsonProcessingException {
+        JsonObjectProcess process = new JsonObjectProcess();
+        process.parseJson(jsonString);
+        for (Map.Entry<String, Map<String, Object>> entry: process.getAllNodes().entrySet()) {
+            redisService.addKeyMapPair(entry.getKey(), entry.getValue());
+        }
+        for (Map.Entry<String, List<String>> entry: process.getAllEdges().entrySet()) {
+            redisService.addKeyListPair(entry.getKey(), entry.getValue());
+        }
     }
 }

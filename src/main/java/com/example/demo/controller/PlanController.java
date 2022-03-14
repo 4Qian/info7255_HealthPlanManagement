@@ -5,12 +5,17 @@ import com.example.demo.exception.ResourceAlreadyExistException;
 import com.example.demo.exception.ResourceNotExistException;
 import com.example.demo.model.*;
 import com.example.demo.model.response.ObjectIdResponse;
+import com.example.demo.redis.RedisService;
 import com.example.demo.service.PlanService;
 import com.example.demo.utils.DataValidator;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("plan") //http://localhost:8080/plan/
@@ -42,6 +47,25 @@ public class PlanController<main> {
         }
 //        https://stackoverflow.com/questions/18584196/etag-support-in-spring-for-versioned-entity
         return plan;
+    }
+
+//    //GET http://localhost:8080/plan/map/{id}
+//    @GetMapping(path="addGraph", produces = "application/plan+json;planVersion=1.0")
+//    public String testAddingMap(@PathVariable("key") String key) {
+////        planService.addNode(key, Map.of("name", "zun", "email", "fsdf@gmail.com", "age", 30));
+////        planService.addEdge(key, List.of("planservice__27283xvx9asdff-504__linkedService", "planservice__27283xvx9asdff-504__planserviceCostShares"));
+//
+//        return "";
+//    }
+    @PostMapping(path="addGraph", produces = "application/plan+json;planVersion=1.0")
+    @ResponseStatus(code = HttpStatus.CREATED)//201
+    public ObjectIdResponse testAddingGraph(@RequestBody String planPayload) throws JsonProcessingException {
+        boolean isValidPayload = DataValidator.validate(planSchemaFile, planPayload);
+        if (!isValidPayload) {
+            throw new PayloadValidationException("The plan payload is invalid");
+        }
+        planService.addGraph(planPayload);
+        return new ObjectIdResponse("add success");
     }
 
     /**

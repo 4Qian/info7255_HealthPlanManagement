@@ -2,8 +2,12 @@ package com.example.demo.service;
 
 import com.example.demo.dao.PlanDao;
 import com.example.demo.model.Plan;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class PlanService {
@@ -41,5 +45,9 @@ public class PlanService {
      */
     public String deletePlan(String id) {
         return planDao.deletePlan(id);
+    }
+
+    public void addGraph(String jsonString) throws JsonProcessingException {
+        planDao.addGraph(jsonString);
     }
 }
