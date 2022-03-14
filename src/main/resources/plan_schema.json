@@ -1,0 +1,103 @@
+{
+   "$schema": "https://json-schema.org/draft/2019-09/schema",
+   "$id": "#PlanSchema.json",
+   "title": "Plan",
+   "description": "A plan from Acme's catalog",
+   "type": "object",
+   "additionalProperties": false,
+   "required": [ "planCostShares", "linkedPlanServices", "_org", "objectType", "planType", "creationDate" ],
+   "properties": {
+      "planCostShares": {
+         "$ref": "#/$defs/membercostshare"
+      },
+      "linkedPlanServices": {
+         "description": "Linked plan services",
+         "type": "array",
+         "items": { "$ref": "#/$defs/planservice" }
+      },
+      "_org": {
+         "description": "Organization information",
+         "type": "string"
+      },
+      "objectId": {
+         "description": "id aspect",
+         "type": "string"
+      },
+      "objectType": {
+         "description": "type aspect",
+         "type": "string"
+      },
+      "planType": {
+         "description": "type of the plan",
+         "type": "string"
+      },
+      "creationDate": {
+         "description": "creation date of the plan",
+         "type": "string"
+      }
+   },
+   "$defs": {
+      "membercostshare": {
+         "description": "membercostshare",
+         "type": "object",
+         "additionalProperties": false,
+         "required": [ "deductible", "_org", "copay", "objectId", "objectType" ],
+         "properties": {
+            "deductible": {
+               "type": "number",
+               "minimum": 0
+            },
+            "_org": {
+               "type": "string"
+            },
+            "copay": {
+               "type": "number",
+               "minimum": 0
+            },
+            "objectId": {
+               "type": "string"
+            },
+            "objectType": {
+               "type": "string"
+            }
+         }
+      },
+      "service": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [ "_org", "objectId", "objectType", "name" ],
+         "properties": {
+            "_org": {
+               "type": "string"
+            },
+            "objectId": {
+               "type": "string"
+            },
+            "objectType": {
+               "type": "string"
+            },
+            "name": {
+               "type": "string"
+            }
+         }
+      },
+      "planservice": {
+         "type": "object",
+         "additionalProperties": false,
+         "required": [ "linkedService", "planserviceCostShares", "_org", "objectId", "objectType" ],
+         "properties": {
+            "linkedService": { "$ref": "#/$defs/service" },
+            "planserviceCostShares": { "$ref": "#/$defs/membercostshare" },
+            "_org": {
+               "type": "string"
+            },
+            "objectId": {
+               "type": "string"
+            },
+            "objectType": {
+               "type": "string"
+            }
+         }
+      }
+   }
+}
