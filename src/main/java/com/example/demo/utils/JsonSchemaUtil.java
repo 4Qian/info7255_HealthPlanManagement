@@ -1,16 +1,23 @@
 package com.example.demo.utils;
 
+import com.example.demo.model.EdgesInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.networknt.schema.*;
 
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
-public class DataValidator {
+public class JsonSchemaUtil {
     // https://github.com/networknt/json-schema-validator
     private static JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909);
     private static ObjectMapper objectMapper = new ObjectMapper();
+
+
+
+
 
     /**
      * validate json payload with json schema defined in a local file.
@@ -26,7 +33,7 @@ public class DataValidator {
         return validatePayloadAgainstSchema(jsonSchema, jsonPayload);
     }
 
-    private static JsonSchema getJsonSchemaObject(String jsonSchemaFilePath) {
+    public static JsonSchema getJsonSchemaObject(String jsonSchemaFilePath) {
 //        https://www.baeldung.com/introduction-to-json-schema-in-java
 //        https://stackoverflow.com/questions/64568986/validation-of-json-schema-in-java
         String schemaStr = FileReader.readFile(jsonSchemaFilePath);

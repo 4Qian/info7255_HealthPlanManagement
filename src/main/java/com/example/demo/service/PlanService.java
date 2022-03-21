@@ -29,6 +29,10 @@ public class PlanService {
         return planDao.selectPlanById(id);
     }
 
+    public String getGraph(String jsonSchemaFile, String planKey) {
+        return planDao.getGraphById(jsonSchemaFile, planKey);
+    }
+
     /**
      *
      * @param planPayload
@@ -47,7 +51,15 @@ public class PlanService {
         return planDao.deletePlan(id);
     }
 
+    public String deleteGraph(String planSchemaFile, String id) {
+        return planDao.deleteGraph(planSchemaFile, id);
+    }
+
     public void addGraph(String jsonString) throws JsonProcessingException {
         planDao.addGraph(jsonString);
+    }
+
+    public String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {
+        return planDao.patchGraph(jsonSchemaFilePath, patchJsonString);
     }
 }

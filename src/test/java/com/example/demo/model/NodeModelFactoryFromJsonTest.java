@@ -1,13 +1,14 @@
-package com.example.demo.utils;
+package com.example.demo.model;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class JsonObjectProcessTest {
+class NodeModelFactoryFromJsonTest {
 
     private static String jsonString = "{\n" +
             "   \"planCostShares\":{\n" +
@@ -65,11 +66,11 @@ class JsonObjectProcessTest {
     @Test
     void parseJson() throws JsonProcessingException {
 
-        JsonObjectProcess jsonObjectProcess = new JsonObjectProcess();
-        jsonObjectProcess.parseJson(jsonString);
+        NodeModel nodeModel = NodeModelFactoryFromJson.fromJsonString(jsonString);
 
-        System.out.println(jsonObjectProcess.getAllEdges());
-        System.out.println(jsonObjectProcess.getAllEdges());
+        RedisData redisData = new RedisData(nodeModel);
+        System.out.println(redisData.allNodes);
+        System.out.println(redisData.allEdges);
 
     }
     private static ObjectMapper objectMapper = new ObjectMapper();
@@ -77,8 +78,7 @@ class JsonObjectProcessTest {
     @Test
     void isComplexNode() throws JsonProcessingException {
         JsonNode jsonNode = objectMapper.readTree(jsonString);
-        JsonObjectProcess jsonObjectProcess = new JsonObjectProcess();
-        assertTrue(jsonObjectProcess.isComplexNode(jsonNode));
+        assertTrue(NodeModelFactoryFromJson.isComplexNode(jsonNode));
     }
 
     @Test
@@ -86,16 +86,14 @@ class JsonObjectProcessTest {
         String json = "{\"abc\": \"abc\"}";
         JsonNode jsonNode = objectMapper.readTree(json);
         JsonNode shouldBeSimple = jsonNode.get("abc");
-        JsonObjectProcess jsonObjectProcess = new JsonObjectProcess();
-        assertFalse(jsonObjectProcess.isComplexNode(shouldBeSimple));
+        assertFalse(NodeModelFactoryFromJson.isComplexNode(shouldBeSimple));
     }
 
     @Test
     void isComplexNode_simple2() throws JsonProcessingException {
         String json = "[\"abc\", \"abcd\"]";
         JsonNode jsonNode = objectMapper.readTree(json);
-        JsonObjectProcess jsonObjectProcess = new JsonObjectProcess();
-        assertFalse(jsonObjectProcess.isComplexNode(jsonNode));
+        assertFalse(NodeModelFactoryFromJson.isComplexNode(jsonNode));
     }
 
     @Test
@@ -103,7 +101,6 @@ class JsonObjectProcessTest {
 
         String json = "[{\"a\":\"b\"}, {\"ad\":\"s\"}]";
         JsonNode jsonNode = objectMapper.readTree(json);
-        JsonObjectProcess jsonObjectProcess = new JsonObjectProcess();
-        assertTrue(jsonObjectProcess.isComplexNode(jsonNode));
+        assertTrue(NodeModelFactoryFromJson.isComplexNode(jsonNode));
     }
 }

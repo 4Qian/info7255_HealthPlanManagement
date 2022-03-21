@@ -1,16 +1,17 @@
 package com.example.demo.dao;
 
-import com.example.demo.model.Plan;
+import com.example.demo.model.*;
 import com.example.demo.redis.RedisService;
-import com.example.demo.utils.JsonObjectProcess;
-import com.example.demo.utils.JsonUtil;
+import com.example.demo.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Repository;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Repository
 public class PlanRedisDao implements PlanDao {
@@ -45,13 +46,56 @@ public class PlanRedisDao implements PlanDao {
 
     @Override
     public void addGraph(String jsonString) throws JsonProcessingException {
-        JsonObjectProcess process = new JsonObjectProcess();
-        process.parseJson(jsonString);
-        for (Map.Entry<String, Map<String, Object>> entry: process.getAllNodes().entrySet()) {
+        NodeModel nodeModel = NodeModelFactoryFromJson.fromJsonString(jsonString);
+        RedisData redisData = new RedisData(nodeModel);
+        System.out.println("=== added");
+        for (Map.Entry<String, Map<String, String>> entry: redisData.allNodes.entrySet()) {
             redisService.addKeyMapPair(entry.getKey(), entry.getValue());
+            System.out.println(String.format("HGETALL \"%s\"", entry.getKey()));
         }
-        for (Map.Entry<String, List<String>> entry: process.getAllEdges().entrySet()) {
+        for (Map.Entry<String, List<String>> entry: redisData.allEdges.entrySet()) {
             redisService.addKeyListPair(entry.getKey(), entry.getValue());
+            System.out.println(String.format("LRANGE \"%s\" 0 -1", entry.getKey()));
         }
+    }
+
+    @Override
+    public String deleteGraph(String jsonSchemaFilePath, String planObjectKey) {
+        NodeModel planData = getPlanData(jsonSchemaFilePath, planObjectKey);
+        RedisData redisData = new RedisData(planData);
+        System.out.println("=== deleted");
+        for (Map.Entry<String, Map<String, String>> entry: redisData.allNodes.entrySet()) {
+            redisService.deleteKeyMapPair(entry.getKey());
+            System.out.println(String.format("HGETALL \"%s\"", entry.getKey()));
+        }
+        for (Map.Entry<String, List<String>> entry: redisData.allEdges.entrySet()) {
+            redisService.deleteKeyListPair(entry.getKey());
+            System.out.println(String.format("LRANGE \"%s\" 0 -1", entry.getKey()));
+        }
+        return "";
+    }
+
+    @Override
+    public String getGraphById(String jsonSchemaFilePath, String planObjectKey) {
+        return getPlanData(jsonSchemaFilePath, planObjectKey).getJsonString();
+    }
+
+    public NodeModel getPlanData(String jsonSchemaFilePath, String planObjectKey) {
+        EdgesInfo edgesInfo = EdgeInfoFactory.fromJsonSchema(jsonSchemaFilePath);
+        return NodeModelFactoryFromRedis.fromRedis(redisService, edgesInfo, planObjectKey);
+    }
+
+    @Override
+    public String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {
+        NodeModel patchNodeModel = NodeModelFactoryFromJson.fromJsonString(patchJsonString);
+        NodeModel existingPlan = getPlanData(jsonSchemaFilePath, patchNodeModel.objectKey);
+        existingPlan.patch(patchNodeModel);
+        boolean isPatchedPlanValid = JsonSchemaUtil.validate(jsonSchemaFilePath, existingPlan.getJsonString());
+        if (!isPatchedPlanValid) {
+            return "invalid patch";
+        }
+        deleteGraph(jsonSchemaFilePath, existingPlan.objectKey);
+        addGraph(existingPlan.getJsonString());
+        return existingPlan.getJsonString();
     }
 }
