@@ -67,7 +67,6 @@ public class PlanService {
             e.printStackTrace();
             return Optional.empty();
         }
-
     }
 
     /**
@@ -86,7 +85,12 @@ public class PlanService {
         }
     }
 
-    public String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {
-        return planDao.patchGraph(jsonSchemaFilePath, patchJsonString);
+    public Optional<String> patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {
+        try {
+            return Optional.of(planDao.patchGraph(jsonSchemaFilePath, patchJsonString));
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
     }
 }
