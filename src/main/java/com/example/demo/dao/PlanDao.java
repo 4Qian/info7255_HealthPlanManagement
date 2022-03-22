@@ -1,10 +1,8 @@
 package com.example.demo.dao;
 
 import com.example.demo.model.Plan;
+import com.example.demo.model.response.ObjectTypeAndIdResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
-
-import java.util.List;
-import java.util.Map;
 
 public interface PlanDao {
     String selectPlanById(String id);
@@ -12,7 +10,8 @@ public interface PlanDao {
     Plan insertPlan(String plan);
     String getGraphById(String jsonSchemaFilePath, String planObjectKey);
     String deletePlan(String id);
-    String deleteGraph(String planSchemaFile, String id);
-    void addGraph(String jsonString) throws JsonProcessingException;
+    ObjectTypeAndIdResponse deleteGraph(String planSchemaFile, String id);
+    ObjectTypeAndIdResponse addGraph(String jsonString) throws JsonProcessingException;
+    String getPlanKey(String patchJsonString) throws JsonProcessingException;
     String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException;
 }

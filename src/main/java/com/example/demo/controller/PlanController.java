@@ -1,19 +1,21 @@
 package com.example.demo.controller;
 
-import com.example.demo.exception.PayloadValidationException;
-import com.example.demo.exception.ResourceAlreadyExistException;
-import com.example.demo.exception.ResourceNotExistException;
-import com.example.demo.model.*;
-import com.example.demo.model.response.ObjectIdResponse;
+import com.example.demo.exception.*;
+import com.example.demo.model.response.ObjectTypeAndIdResponse;
 import com.example.demo.permissions.ResourcePermission;
 import com.example.demo.service.AuthorizationService;
 import com.example.demo.service.PlanService;
+import com.example.demo.utils.DigestUtil;
 import com.example.demo.utils.JsonSchemaUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @RestController
 @RequestMapping("plan") //http://localhost:8080/plan/
@@ -35,138 +37,88 @@ public class PlanController<main> {
         this.planService = studentService;
     }
 
-    // https://www.springboottutorial.com/spring-boot-versioning-for-rest-services
-    // version our RESTful API?
-    // approach4: Media type versioning (a.k.a “content negotiation” or “accept header”)
-    // GET http://localhost:8080/plan/{id}
     @GetMapping(path="{id}", produces = "application/plan+json;planVersion=1.0")
     // https://stackoverflow.com/questions/41278484/springs-support-for-if-match-header //  @RequestHeader("If-None-Match") String ifNonMatch
     // https://asbnotebook.com/etags-in-restful-services-spring-boot/
-    public String getPlan(@PathVariable("id") String id) {
-        String plan = planService.getPlan(id);
-        if (plan == null) { // not exist
+    public ResponseEntity<String> getGraph(@PathVariable("id") String objectId,
+                           @RequestHeader(value = "Authorization", required = false) String idToken,
+                           @RequestHeader(value = "If-None-Match", required = false) String ifNoneMatchHeader) {
+
+        String key = "plan___" + objectId;
+        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.READ, key);
+        if (!authorized) {
+            throw new UnauthorizedException("not authorized");
+        }
+        Optional<String> plan = planService.getGraph(planSchemaFile, key);
+        if (plan.isEmpty()) { // not exist
             throw new ResourceNotExistException("Plan with the specified id does not exist");
         }
-//        https://stackoverflow.com/questions/18584196/etag-support-in-spring-for-versioned-entity
-        return plan;
-    }
-
-    @GetMapping(path="g/{id}", produces = "application/plan+json;planVersion=1.0")
-    // https://stackoverflow.com/questions/41278484/springs-support-for-if-match-header //  @RequestHeader("If-None-Match") String ifNonMatch
-    // https://asbnotebook.com/etags-in-restful-services-spring-boot/
-    public String getGraph(@PathVariable("id") String id, @RequestHeader(value = "Authorization", required = false) String idToken) {
-        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.READ, id);
-        if (!authorized) {
-            return "not authorized";
-        }
-        String plan = planService.getGraph(planSchemaFile, id);
-
-        if (plan == null) { // not exist
-            throw new ResourceNotExistException("Plan with the specified id does not exist");
+        if (ifNoneMatchHeader != null && ifNoneMatchHeader.equals(DigestUtil.getEtagQuoted(plan.get()))) {
+            throw new ResourceNotModifiedException("resource not modified");
         }
 //        https://stackoverflow.com/questions/18584196/etag-support-in-spring-for-versioned-entity
-        return plan;
+        HttpHeaders responseHeaders = new HttpHeaders();
+        responseHeaders.set("Etag", DigestUtil.getEtag(plan.get()));
+        // https://stackoverflow.com/questions/45152484/how-to-set-respond-header-values-in-spring-boot-rest-service-method
+        return new ResponseEntity<>(plan.get(), responseHeaders, HttpStatus.OK);
     }
 
-//    //GET http://localhost:8080/plan/map/{id}
-//    @GetMapping(path="addGraph", produces = "application/plan+json;planVersion=1.0")
-//    public String testAddingMap(@PathVariable("key") String key) {
-////        planService.addNode(key, Map.of("name", "zun", "email", "fsdf@gmail.com", "age", 30));
-////        planService.addEdge(key, List.of("planservice__27283xvx9asdff-504__linkedService", "planservice__27283xvx9asdff-504__planserviceCostShares"));
-//
-//        return "";
-//    }
-    @PostMapping(path="g", produces = "application/plan+json;planVersion=1.0")
-    @ResponseStatus(code = HttpStatus.CREATED)//201
-    public ObjectIdResponse addGraph(@RequestBody String planPayload, @RequestHeader(value = "Authorization", required = false) String idToken) throws JsonProcessingException {
-        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.ADD, null);
-        if (!authorized) {
-            return new ObjectIdResponse("not authorized");
-        }
-        boolean isValidPayload = JsonSchemaUtil.validate(planSchemaFile, planPayload);
-        if (!isValidPayload) {
-            throw new PayloadValidationException("The plan payload is invalid");
-        }
-        planService.addGraph(planPayload);
-        return new ObjectIdResponse("add success");
-    }
-
-    @PatchMapping(path="g", produces = "application/plan+json;planVersion=1.0")
-    @ResponseStatus(code = HttpStatus.OK)//200
-    public String patchGraph(@RequestBody String planPatchPayload, @RequestHeader(value = "Authorization", required = false) String idToken) throws JsonProcessingException {
-        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.UPDATE, null);
-        if (!authorized) {
-            return "not authorized";
-        }
-        String updatedData = planService.patchGraph(planSchemaFile, planPatchPayload);
-        return updatedData;
-    }
-
-//    @PatchMapping(path="patchGraph", produces = "application/plan+json;planVersion=1.0")
-//    @ResponseStatus(code = HttpStatus.OK)//201
-//    public ObjectIdResponse testPatch(@RequestBody String patchPayload) throws JsonProcessingException {
-//        boolean isValidPayload = DataValidator.validate(planSchemaFile, planPayload);
-//        if (!isValidPayload) {
-//            throw new PayloadValidationException("The plan payload is invalid");
-//        }
-//        planService.addGraph(planPayload);
-//        return new ObjectIdResponse("add success");
-//    }
-
-
-    /**
-     * why not return Etag in POST API?
-     * https://en.wikipedia.org/wiki/HTTP_ETag
-     * In typical usage, when a URL is retrieved, the Web server will return the resource's current representation along with its corresponding ETag value, which is placed in an HTTP response header "ETag" field:
-     *
-     * A good discussion: https://stackoverflow.com/questions/42246577/why-responses-to-put-requests-must-not-provide-an-etag
-     * The key point is that the server may, or may not, alter the representation before storing it
-     * @param planPayload
-     * @return
-     */
-    // POST http://localhost:8080/plan
     @PostMapping(produces = "application/plan+json;planVersion=1.0")
     @ResponseStatus(code = HttpStatus.CREATED)//201
-    public ObjectIdResponse addPlan(@RequestBody String planPayload) {
+    public ResponseEntity<ObjectTypeAndIdResponse> addGraph(@RequestBody String planPayload,
+                                                            @RequestHeader(value = "Authorization", required = false) String idToken) throws JsonProcessingException {
+        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.ADD, null);
+        if (!authorized) {
+            throw new UnauthorizedException("not authorized");
+        }
         boolean isValidPayload = JsonSchemaUtil.validate(planSchemaFile, planPayload);
         if (!isValidPayload) {
             throw new PayloadValidationException("The plan payload is invalid");
         }
-        Plan insertedPlan = planService.addPlan(planPayload);
-        if (insertedPlan == null) { // meaning that the object already exist
-            // https://stackoverflow.com/questions/3825990/http-response-code-for-post-when-resource-already-exists#:~:text=It%20seems%20that%20409%20Conflict,incompatible%20with%20its%20current%20state.
-            // https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/409
-            //  indicates a request conflict with the current state of the target resource
-            throw new ResourceAlreadyExistException("The plan with the specified id already exists");
+        Optional<ObjectTypeAndIdResponse> objectTypeAndId = planService.addGraph(planPayload);
+        if (objectTypeAndId.isEmpty()) {
+            throw new ResourceAlreadyExistException("plan already existed");
         }
-        // https://stackoverflow.com/questions/68993031/spring-boot-mvc-how-to-generate-etag-value-of-an-entity-programatically
-        return new ObjectIdResponse(insertedPlan.getId());
+//        HttpHeaders responseHeaders = new HttpHeaders();
+//        responseHeaders.set("Etag", DigestUtil.getDigest(planService.getGraph(planSchemaFile, planKey)));
+//        // https://stackoverflow.com/questions/45152484/how-to-set-respond-header-values-in-spring-boot-rest-service-method
+        return new ResponseEntity<>(objectTypeAndId.get(), HttpStatus.CREATED);
     }
 
-    // DELETE http://localhost:8080/plan/这里换成id
+    @PatchMapping(produces = "application/plan+json;planVersion=1.0")
+    public ResponseEntity<String> patchGraph(@RequestBody String planPatchPayload,
+                             @RequestHeader(value = "Authorization", required = false) String idToken,
+                             @RequestHeader(value = "If-Match", required = false) String ifMatchHeader) throws JsonProcessingException {
+        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.UPDATE, null);
+        if (!authorized) {
+            return new ResponseEntity<>("not authorized", HttpStatus.UNAUTHORIZED);
+        }
+
+        String planKey = planService.extractPlanKey(planPatchPayload);
+        Optional<String> existingData = planService.getGraph(planSchemaFile, planKey);
+        if (existingData.isEmpty()) {
+            throw new ResourceNotExistException("resource does not exist");
+        }
+        if (ifMatchHeader != null && !ifMatchHeader.equals(DigestUtil.getEtagQuoted(existingData.get()))) {
+            throw new PreconditionFailedException("modified since last GET request");
+        }
+        String updatedData = planService.patchGraph(planSchemaFile, planPatchPayload);
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
     @DeleteMapping(path="{id}")
     // localhost:8080/api/student/12345
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public ObjectIdResponse deletePlan(@PathVariable("id") String id) {
-        String removedPlanId = planService.deletePlan(id);
-        if (removedPlanId == null) {
-            throw new ResourceNotExistException("The plan with the specified id does not exist");
-        }
-        return new ObjectIdResponse(removedPlanId);
-    }
-
-    @DeleteMapping(path="g/{id}")
-    // localhost:8080/api/student/12345
-    @ResponseStatus(code = HttpStatus.NO_CONTENT)
-    public ObjectIdResponse deleteGraph(@PathVariable("id") String id, @RequestHeader(value = "Authorization", required = false) String idToken) {
-        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.DELETE, id);
+    public ObjectTypeAndIdResponse deleteGraph(@PathVariable("id") String objectId,
+                                               @RequestHeader(value = "Authorization", required = false) String idToken) {
+        String key =  "plan___" + objectId;
+        boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.DELETE, key);
         if (!authorized) {
-            return new ObjectIdResponse("not authorized");
+            throw new UnauthorizedException("not authorized");
         }
-        String removedPlanId = planService.deleteGraph(planSchemaFile, id);
-        if (removedPlanId == null) {
+        Optional<ObjectTypeAndIdResponse> removedObjectTypeAndId = planService.deleteGraph(planSchemaFile, key);
+        if (removedObjectTypeAndId.isEmpty()) {
             throw new ResourceNotExistException("The plan with the specified id does not exist");
         }
-        return new ObjectIdResponse(removedPlanId);
+        return removedObjectTypeAndId.get();
     }
 }

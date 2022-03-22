@@ -1,6 +1,7 @@
 package com.example.demo.dao;
 
 import com.example.demo.model.*;
+import com.example.demo.model.response.ObjectTypeAndIdResponse;
 import com.example.demo.redis.RedisService;
 import com.example.demo.utils.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -8,10 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.util.Pair;
 import org.springframework.stereotype.Repository;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Repository
 public class PlanRedisDao implements PlanDao {
@@ -45,8 +44,13 @@ public class PlanRedisDao implements PlanDao {
     }
 
     @Override
-    public void addGraph(String jsonString) throws JsonProcessingException {
+    public ObjectTypeAndIdResponse addGraph(String jsonString) throws JsonProcessingException {
         NodeModel nodeModel = NodeModelFactoryFromJson.fromJsonString(jsonString);
+        String planKey = nodeModel.objectKey;
+        Map<String, String> planSimpleProperties = redisService.getNodeSimpleProperties(planKey);
+        if (!planSimpleProperties.isEmpty()) {
+            throw new RuntimeException("plan already exist");
+        }
         RedisData redisData = new RedisData(nodeModel);
         System.out.println("=== added");
         for (Map.Entry<String, Map<String, String>> entry: redisData.allNodes.entrySet()) {
@@ -57,10 +61,11 @@ public class PlanRedisDao implements PlanDao {
             redisService.addKeyListPair(entry.getKey(), entry.getValue());
             System.out.println(String.format("LRANGE \"%s\" 0 -1", entry.getKey()));
         }
+        return nodeModel.getObjectTypeAndId();
     }
 
     @Override
-    public String deleteGraph(String jsonSchemaFilePath, String planObjectKey) {
+    public ObjectTypeAndIdResponse deleteGraph(String jsonSchemaFilePath, String planObjectKey) {
         NodeModel planData = getPlanData(jsonSchemaFilePath, planObjectKey);
         RedisData redisData = new RedisData(planData);
         System.out.println("=== deleted");
@@ -72,7 +77,7 @@ public class PlanRedisDao implements PlanDao {
             redisService.deleteKeyListPair(entry.getKey());
             System.out.println(String.format("LRANGE \"%s\" 0 -1", entry.getKey()));
         }
-        return "";
+        return planData.getObjectTypeAndId();
     }
 
     @Override
@@ -86,13 +91,19 @@ public class PlanRedisDao implements PlanDao {
     }
 
     @Override
+    public String getPlanKey(String patchJsonString) throws JsonProcessingException {
+        NodeModel patchNodeModel = NodeModelFactoryFromJson.fromJsonString(patchJsonString);
+        return patchNodeModel.objectKey;
+    }
+
+    @Override
     public String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {
         NodeModel patchNodeModel = NodeModelFactoryFromJson.fromJsonString(patchJsonString);
         NodeModel existingPlan = getPlanData(jsonSchemaFilePath, patchNodeModel.objectKey);
         existingPlan.patch(patchNodeModel);
         boolean isPatchedPlanValid = JsonSchemaUtil.validate(jsonSchemaFilePath, existingPlan.getJsonString());
         if (!isPatchedPlanValid) {
-            return "invalid patch";
+            throw new RuntimeException("Invalid patch");
         }
         deleteGraph(jsonSchemaFilePath, existingPlan.objectKey);
         addGraph(existingPlan.getJsonString());

@@ -2,12 +2,12 @@ package com.example.demo.service;
 
 import com.example.demo.dao.PlanDao;
 import com.example.demo.model.Plan;
+import com.example.demo.model.response.ObjectTypeAndIdResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class PlanService {
@@ -29,8 +29,17 @@ public class PlanService {
         return planDao.selectPlanById(id);
     }
 
-    public String getGraph(String jsonSchemaFile, String planKey) {
-        return planDao.getGraphById(jsonSchemaFile, planKey);
+    public Optional<String> getGraph(String jsonSchemaFile, String planKey) {
+        try {
+            return Optional.of(planDao.getGraphById(jsonSchemaFile, planKey));
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+    }
+
+    public String extractPlanKey(String patchPayload) throws JsonProcessingException {
+        return planDao.getPlanKey(patchPayload);
     }
 
     /**
@@ -51,12 +60,30 @@ public class PlanService {
         return planDao.deletePlan(id);
     }
 
-    public String deleteGraph(String planSchemaFile, String id) {
-        return planDao.deleteGraph(planSchemaFile, id);
+    public Optional<ObjectTypeAndIdResponse> deleteGraph(String planSchemaFile, String id) {
+        try {
+            return Optional.of(planDao.deleteGraph(planSchemaFile, id));
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+
     }
 
-    public void addGraph(String jsonString) throws JsonProcessingException {
-        planDao.addGraph(jsonString);
+    /**
+     * return plan key
+     *
+     * @param jsonString
+     * @return
+     * @throws JsonProcessingException
+     */
+    public Optional<ObjectTypeAndIdResponse> addGraph(String jsonString) throws JsonProcessingException {
+        try {
+            return Optional.of(planDao.addGraph(jsonString));
+        } catch (RuntimeException e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
     }
 
     public String patchGraph(String jsonSchemaFilePath, String patchJsonString) throws JsonProcessingException {

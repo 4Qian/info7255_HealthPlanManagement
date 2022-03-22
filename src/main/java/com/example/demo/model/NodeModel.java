@@ -1,5 +1,7 @@
 package com.example.demo.model;
 
+import com.example.demo.model.response.ObjectTypeAndIdResponse;
+
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -7,15 +9,20 @@ import java.util.stream.Stream;
 
 public class NodeModel {
     public String objectKey;
-    public Map<String, String> simpleProperties;
-    public Map<String, NodeModel> complexObjectProperties;
-    public Map<String, List<NodeModel>> complexArrayProperties;
+    public TreeMap<String, String> simpleProperties;
+    public TreeMap<String, NodeModel> complexObjectProperties;
+    public TreeMap<String, List<NodeModel>> complexArrayProperties;
 
     public NodeModel(String objectKey) {
         this.objectKey = objectKey;
-        simpleProperties = new HashMap<>();
-        complexObjectProperties = new HashMap<>();
-        complexArrayProperties = new HashMap<>();
+        simpleProperties = new TreeMap<>();
+        complexObjectProperties = new TreeMap<>();
+        complexArrayProperties = new TreeMap<>();
+    }
+
+    public ObjectTypeAndIdResponse getObjectTypeAndId() {
+        String[] pair = objectKey.split("___");
+        return new ObjectTypeAndIdResponse(pair[0], pair[1]);
     }
 
     public void patch(NodeModel patchData) {

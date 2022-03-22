@@ -74,6 +74,8 @@ public class AuthorizationService {
             googleIdToken = VERIFIER.verify(idToken);
         } catch (GeneralSecurityException | IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         if (googleIdToken == null) {
             System.out.println("== not a valid google tokenId, signature: audience clain, issuer clain or expiry claim are invalid");

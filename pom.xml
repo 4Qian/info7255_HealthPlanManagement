@@ -17,6 +17,12 @@
 		<java.version>11</java.version>
 	</properties>
 	<dependencies>
+		<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.15</version>
+		</dependency>
 		<!-- https://mvnrepository.com/artifact/com.google.api-client/google-api-client -->
 		<dependency>
 			<groupId>com.google.api-client</groupId>

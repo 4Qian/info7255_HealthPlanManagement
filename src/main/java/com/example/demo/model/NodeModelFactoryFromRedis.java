@@ -5,6 +5,7 @@ import com.example.demo.redis.RedisService;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class NodeModelFactoryFromRedis {
@@ -38,7 +39,7 @@ public class NodeModelFactoryFromRedis {
         }
         // then construct simple properties
         Map<String, String> nodeSimpleProperties = redisService.getNodeSimpleProperties(nodeKey);
-        nodeModel.simpleProperties = new HashMap<>(nodeSimpleProperties);
+        nodeModel.simpleProperties = new TreeMap<>(nodeSimpleProperties);
         return nodeModel;
     }
 }
