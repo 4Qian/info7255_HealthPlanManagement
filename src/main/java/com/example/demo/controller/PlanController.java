@@ -118,16 +118,22 @@ public class PlanController<main> {
     @ResponseStatus(code = HttpStatus.NO_CONTENT)
     public ObjectTypeAndIdResponse deleteGraph(@PathVariable("objectType") String objectType,
                                                @PathVariable("objectId") String objectId,
-                                               @RequestHeader(value = "Authorization", required = false) String idToken) {
+                                               @RequestHeader(value = "Authorization", required = false) String idToken,
+                                               @RequestHeader(value = "If-Match", required = false) String ifMatchHeader) {
         String key = objectType + "___" + objectId;
         boolean authorized = authorizationService.authorizeIdToken(idToken, ResourcePermission.Operation.DELETE, key);
         if (!authorized) {
             throw new UnauthorizedException("not authorized");
         }
-        Optional<ObjectTypeAndIdResponse> removedObjectTypeAndId = planService.deleteGraph(planSchemaFile, key);
-        if (removedObjectTypeAndId.isEmpty()) {
+        Optional<String> existingData = planService.getGraph(planSchemaFile, key);
+        if (existingData.isEmpty()) {
             throw new ResourceNotExistException("The plan with the specified id does not exist");
         }
+        if (ifMatchHeader != null && !ifMatchHeader.equals(DigestUtil.getEtagQuoted(existingData.get()))) {
+            throw new PreconditionFailedException("modified since last GET request");
+        }
+
+        Optional<ObjectTypeAndIdResponse> removedObjectTypeAndId = planService.deleteGraph(planSchemaFile, key);
         return removedObjectTypeAndId.get();
     }
 }
