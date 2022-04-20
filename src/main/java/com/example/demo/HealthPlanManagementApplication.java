@@ -1,13 +1,15 @@
 package com.example.demo;
 
+import com.example.demo.rabbitMQ.RabbitMQConsumer;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
 public class HealthPlanManagementApplication {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
 		SpringApplication.run(HealthPlanManagementApplication.class, args);
+		RabbitMQConsumer.main(null);
 	}
 
 //	@Bean

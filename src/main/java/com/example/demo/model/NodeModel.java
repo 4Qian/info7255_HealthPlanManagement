@@ -61,6 +61,43 @@ public class NodeModel {
         }
     }
 
+    public List<ESRequest> getElasticSearchRequestBodies(String joinTypeName, Optional<String> parentId) {
+        List<ESRequest> res = new ArrayList<>();
+
+        List<String> entryStringList = new ArrayList<>();
+        for (String propertyName : simpleProperties.keySet()) {
+            entryStringList.add(String.format("\"%s\": %s", propertyName, simpleProperties.get(propertyName)));
+        }
+        boolean needRouting = false;
+        if (parentId.isEmpty()) {
+            entryStringList.add(String.format("\"plan_join_field\": \"%s\"", joinTypeName));
+        } else {
+            entryStringList.add(String.format("\"plan_join_field\": {\n" +
+                    "    \"name\": \"%s\",\n" +
+                    "    \"parent\": \"%s\"\n" +
+                    "  }", joinTypeName, parentId.get()));
+            needRouting = true;
+        }
+        String requestBody = "{" + entryStringList.stream().collect(Collectors.joining(",")) + "}";
+        res.add(new ESRequest("plan", objectKey, requestBody, needRouting));
+
+        for (Map.Entry<String, NodeModel> entry: complexObjectProperties.entrySet()) {
+            String edgeName = entry.getKey();
+            NodeModel targetNodeModel = entry.getValue();
+            List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequestBodies(edgeName, Optional.of(objectKey));
+            res.addAll(childrenRequestBodies);
+        }
+        for (Map.Entry<String, List<NodeModel>> entry: complexArrayProperties.entrySet()) {
+            String edgeName = entry.getKey();
+            List<NodeModel> targetNodeModelList = entry.getValue();
+            for (NodeModel targetNodeModel : targetNodeModelList) {
+                List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequestBodies(edgeName, Optional.of(objectKey));
+                res.addAll(childrenRequestBodies);
+            }
+        }
+        return res;
+    }
+
     public String getJsonString() {
         List<String> entryStringList = new ArrayList<>();
         // process complex properties first
