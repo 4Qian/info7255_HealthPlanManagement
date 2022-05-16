@@ -61,7 +61,15 @@ public class NodeModel {
         }
     }
 
-    public List<ESRequest> getElasticSearchRequestBodies(String joinTypeName, Optional<String> parentId) {
+    /**
+     * This object represents the plan object.
+     * This method converts the object to the corresponding elastic search requests.
+     *
+     * @param joinTypeName
+     * @param parentId
+     * @return
+     */
+    public List<ESRequest> getElasticSearchRequests(String joinTypeName, Optional<String> parentId) {
         List<ESRequest> res = new ArrayList<>();
 
         List<String> entryStringList = new ArrayList<>();
@@ -72,10 +80,10 @@ public class NodeModel {
         if (parentId.isEmpty()) {
             entryStringList.add(String.format("\"plan_join_field\": \"%s\"", joinTypeName));
         } else {
-            entryStringList.add(String.format("\"plan_join_field\": {\n" +
-                    "    \"name\": \"%s\",\n" +
-                    "    \"parent\": \"%s\"\n" +
-                    "  }", joinTypeName, parentId.get()));
+            entryStringList.add(String.format("\"plan_join_field\": {" +
+                    "\"name\": \"%s\"," +
+                    "\"parent\": \"%s\"" +
+                    "}", joinTypeName, parentId.get()));
             needRouting = true;
         }
         String requestBody = "{" + entryStringList.stream().collect(Collectors.joining(",")) + "}";
@@ -84,14 +92,14 @@ public class NodeModel {
         for (Map.Entry<String, NodeModel> entry: complexObjectProperties.entrySet()) {
             String edgeName = entry.getKey();
             NodeModel targetNodeModel = entry.getValue();
-            List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequestBodies(edgeName, Optional.of(objectKey));
+            List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequests(edgeName, Optional.of(objectKey));
             res.addAll(childrenRequestBodies);
         }
         for (Map.Entry<String, List<NodeModel>> entry: complexArrayProperties.entrySet()) {
             String edgeName = entry.getKey();
             List<NodeModel> targetNodeModelList = entry.getValue();
             for (NodeModel targetNodeModel : targetNodeModelList) {
-                List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequestBodies(edgeName, Optional.of(objectKey));
+                List<ESRequest> childrenRequestBodies = targetNodeModel.getElasticSearchRequests(edgeName, Optional.of(objectKey));
                 res.addAll(childrenRequestBodies);
             }
         }

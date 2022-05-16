@@ -41,7 +41,7 @@ public class FileReader {
                 }
             }
         } catch(IOException e){
-            e.printStackTrace();
+            // e.printStackTrace();
             throw new IllegalArgumentException("file path: " + new File(filePath).getAbsolutePath());
         }
         return sb.toString();

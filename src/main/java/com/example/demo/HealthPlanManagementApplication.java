@@ -9,7 +9,7 @@ public class HealthPlanManagementApplication {
 
 	public static void main(String[] args) throws Exception {
 		SpringApplication.run(HealthPlanManagementApplication.class, args);
-		RabbitMQConsumer.main(null);
+		RabbitMQConsumer.start();
 	}
 
 //	@Bean

@@ -33,7 +33,7 @@ public class PlanService {
         try {
             return Optional.of(planDao.getGraphById(jsonSchemaFile, planKey));
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             return Optional.empty();
         }
     }
@@ -64,7 +64,7 @@ public class PlanService {
         try {
             return Optional.of(planDao.deleteGraph(planSchemaFile, id));
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             return Optional.empty();
         }
     }
@@ -80,7 +80,7 @@ public class PlanService {
         try {
             return Optional.of(planDao.addGraph(jsonString));
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             return Optional.empty();
         }
     }
@@ -89,7 +89,7 @@ public class PlanService {
         try {
             return Optional.of(planDao.patchGraph(jsonSchemaFilePath, patchJsonString));
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            // e.printStackTrace();
             return Optional.empty();
         }
     }

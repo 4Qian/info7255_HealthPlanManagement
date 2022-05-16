@@ -66,7 +66,7 @@ public class AuthorizationService {
             return false;
         }
         idToken = idToken.substring(BEARER_HEADER_PREFIX.length());
-        System.out.println(idToken);
+//        System.out.println(idToken);
         GoogleIdToken googleIdToken = null;
         try {
             // https://developers.google.com/identity/sign-in/web/backend-auth#calling-the-tokeninfo-endpoint

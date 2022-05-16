@@ -106,7 +106,7 @@ public class RedisService {
         for (int i = 0; i < size; i++) {
             res.add(listOperations.index(key, i));
         }
-        System.out.println(res);
+//        System.out.println(res);
         return res;
     }
 }
